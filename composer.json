@@ -9,6 +9,10 @@
     "entity",
     "ddd"
   ],
+  "support": {
+    "issues": "https://github.com/arkye/repository/issues",
+    "source": "https://github.com/arkye/repository"
+  },
   "authors": [
     {
       "name": "Gustavo Siqueira",
@@ -32,6 +36,7 @@
   "autoload-dev": {
     "psr-4": {
       "Tests\\": "tests/"
-    }
+    },
+    "files": ["tests/helpers.php"]
   }
 }
