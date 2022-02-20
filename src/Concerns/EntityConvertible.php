@@ -79,7 +79,7 @@ trait EntityConvertible
     $publicProps = array_flip($this->getEntityPublicProperties($entity));
     $nonPublicProps = array_flip($this->getEntityNonPublicProperties($entity));
 
-    array_walk($publicProps, fn(&$value, $propertyName) => $value = $entity->{$propertyName});
+    array_walk($publicProps, fn(&$value, $propertyName) => $value = $entity->{$propertyName} ?? null);
     array_walk($nonPublicProps, function (&$value, $propertyName) use ($entity) {
       $getter = 'get' . ucfirst($propertyName);
 
