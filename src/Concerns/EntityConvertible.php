@@ -2,93 +2,154 @@
 
 namespace Arkye\Repository\Concerns;
 
+use Arkye\Repository\EntityManager;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Str;
 use ReflectionClass;
+use ReflectionException;
 
 trait EntityConvertible
 {
 
-  public function fromEntity(object $entity): self
+  /**
+   * @param object $entity
+   * @return static
+   * @throws ReflectionException
+   */
+  public function fromEntity(object $entity): static
   {
-    $props = $this->entityToArray($entity);
+    $map = $this->getEntityMap($entity);
 
-    foreach ($props as $propertyName => $value)
+    foreach ($map as $propertyName => $prop)
     {
-      $this->{Str::snake($propertyName)} = $value;
+      if ($this->isRelation($propertyName)) {
+        $this->handleEntityRelation($propertyName, $prop);
+        continue;
+      }
+
+      $this->{Str::snake($propertyName)} = $prop['value'];
     }
 
     return $this;
   }
 
   /**
-   * @param object $entity
+   * @param object|null $entity
    * @return object
+   * @throws ReflectionException
    */
-  public function toEntity(object $entity): object
+  public function toEntity(object $entity = null): object
   {
-    $publicProps = $this->getEntityPublicProperties($entity);
-    $nonPublicProps = $this->getEntityNonPublicProperties($entity);
+    $entity ??= $this->getRepository()->newEntity();
 
-    foreach ($publicProps as $propertyName)
+    $map = $this->getEntityMap($entity);
+
+    foreach ($map as $propertyName => $prop)
     {
-      $entity->{$propertyName} = $this->{Str::snake($propertyName)} ?? null;
-    }
-
-    foreach ($nonPublicProps as $propertyName)
-    {
-      $setter = 'set' . ucfirst($propertyName);
-
-      if (!method_exists($entity, $setter)) {
+      if ($this->isRelation($propertyName)) {
+        $this->handleModelRelation($entity, $propertyName, $prop);
         continue;
       }
 
-      $entity->{$setter}($this->{Str::snake($propertyName)} ?? null);
+      if ($prop['public']) {
+        $entity->{$propertyName} = $this->{Str::snake($propertyName)} ?? null;
+      } else {
+        $setter = 'set' . ucfirst($propertyName);
+
+        if (!method_exists($entity, $setter)) {
+          continue;
+        }
+
+        $entity->{$setter}($this->{Str::snake($propertyName)} ?? null);
+      }
+
     }
 
     return $entity;
   }
 
-  private function getEntityProperties(object $entity): array
+  /**
+   * @param object $entity
+   * @param string $propertyName
+   * @param array $prop
+   * @return void
+   * @throws ReflectionException
+   */
+  private function handleModelRelation(object &$entity, string $propertyName, array $prop): void
   {
-    $ref = new ReflectionClass($entity);
-
-    return array_filter($ref->getProperties(), fn($prop) => !$prop->isStatic());
-  }
-
-  private function getEntityPublicProperties(object $entity): array
-  {
-    $props = $this->getEntityProperties($entity);
-
-    return array_map(fn($prop) => $prop->getName(), array_filter($props, fn($prop) => $prop->isPublic()));
-  }
-
-  private function getEntityNonPublicProperties(object $entity): array
-  {
-    $props = $this->getEntityProperties($entity);
-
-    return array_map(fn($prop) => $prop->getName(), array_filter($props, fn($prop) => !$prop->isPublic()));
-  }
-
-  private function entityToArray(object $entity): array
-  {
-    if ($entity instanceof Arrayable) {
-      return $entity->toArray();
+    if (!$this->relationLoaded($propertyName)) {
+      return;
     }
 
-    $publicProps = array_flip($this->getEntityPublicProperties($entity));
-    $nonPublicProps = array_flip($this->getEntityNonPublicProperties($entity));
+    $relationModel = $this->{$propertyName};
 
-    array_walk($publicProps, fn(&$value, $propertyName) => $value = $entity->{$propertyName} ?? null);
-    array_walk($nonPublicProps, function (&$value, $propertyName) use ($entity) {
-      $getter = 'get' . ucfirst($propertyName);
+    if (null === $relationModel && $prop['nullable']) {
+      $entity->{$propertyName} = null;
+      return;
+    }
 
-      $value = method_exists($entity, $getter)
-        ? $entity->$getter()
-        : null;
-    });
+    $entity->{$propertyName} = $relationModel?->toEntity() ?? $relationModel->getRepository()->newEntity();
+  }
 
-    return array_merge($nonPublicProps, $publicProps);
+  /**
+   * @param string $propertyName
+   * @param array $prop
+   * @return void
+   * @throws ReflectionException
+   */
+  private function handleEntityRelation(string $propertyName, array $prop): void
+  {
+    if (blank($prop['value'])) {
+      $this->setRelation($propertyName, null);
+      return;
+    }
+
+    $model = EntityManager::getRepository($prop['type'])->newModel($prop['value'] ?? (object) []);
+
+    $this->setRelation($propertyName, $model);
+  }
+
+  /**
+   * @param object $entity
+   * @return array
+   */
+  private function getEntityMap(object $entity): array
+  {
+    $convertedEntity = ($entity instanceof Arrayable)
+      ? $entity->toArray()
+      : [];
+
+    $map = [];
+    $ref = new ReflectionClass($entity);
+
+    foreach ($ref->getProperties() as $prop)
+    {
+      if ($prop->isStatic()) {
+        continue;
+      }
+
+      $propMap = [
+        'public' => $prop->isPublic(),
+        'nullable' => $prop->getType()->allowsNull(),
+        'type' => $prop->getType()->getName(),
+        'value' => null,
+      ];
+
+      if ($prop->isPublic()) {
+        $propMap['value'] = $convertedEntity[$prop->getName()] ?? $entity->{$prop->getName()} ?? null;
+      } else {
+        $getter = 'get' . ucfirst($prop->getName());
+        $propMap['value'] = $convertedEntity[$prop->getName()] ?? (
+          method_exists($entity, $getter)
+            ? $entity->$getter()
+            : null
+          );
+      }
+
+      $map[$prop->getName()] = $propMap;
+    }
+
+    return $map;
   }
 
 }
