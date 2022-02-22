@@ -56,25 +56,39 @@ class EntityRepository implements IEntityRepository
   }
 
   /**
+   * @param object|null $model
    * @return object
    */
-  public function newEntity(): object
+  public function newEntity(object $model = null): object
   {
-    return $this
+    $entity = $this
       ->entityAttribute
       ->newInstance()
       ->newInstance();
+
+    if ($model !== null) {
+      return $model->toEntity($entity);
+    }
+
+    return $entity;
   }
 
   /**
+   * @param object|null $entity
    * @return Model
    */
-  public function newModel(): Model
+  public function newModel(object $entity = null): Model
   {
-    return $this
+    $model = $this
       ->modelAttribute
       ->newInstance()
       ->newInstance();
+
+    if ($entity !== null) {
+      return $model->fromEntity($entity);
+    }
+
+    return $model;
   }
 
   /**
