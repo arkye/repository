@@ -5,6 +5,7 @@ namespace Arkye\Repository\Interfaces;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use UnexpectedValueException;
 
 interface IEntityRepository
 {
@@ -12,16 +13,18 @@ interface IEntityRepository
   /**
    * Returns a new instance of entity.
    *
-   * @return object|null
+   * @param object|null $model
+   * @return object
    */
-  public function newEntity(): ?object;
+  public function newEntity(?object $model = null): object;
 
   /**
    * Returns a new instance of model.
    *
+   * @param object|null $entity
    * @return object|null
    */
-  public function newModel(): ?object;
+  public function newModel(?object $entity = null): ?object;
 
   /**
    * Get a new query builder for the model's table.
@@ -89,5 +92,10 @@ interface IEntityRepository
    */
   public function paginate(int $perPage, int $pageNumber, array $columns = ['*'], string $pageName = 'page'): LengthAwarePaginator;
 
-}
+  /**
+   * @param object $entity
+   * @return bool
+   */
+  public function persist(object $entity): bool;
 
+}

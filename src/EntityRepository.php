@@ -59,7 +59,7 @@ class EntityRepository implements IEntityRepository
    * @param object|null $model
    * @return object
    */
-  public function newEntity(object $model = null): object
+  public function newEntity(?object $model = null): object
   {
     $entity = $this
       ->entityAttribute
@@ -77,7 +77,7 @@ class EntityRepository implements IEntityRepository
    * @param object|null $entity
    * @return Model
    */
-  public function newModel(object $entity = null): Model
+  public function newModel(?object $entity = null): Model
   {
     $model = $this
       ->modelAttribute
@@ -114,11 +114,21 @@ class EntityRepository implements IEntityRepository
       return null;
     }
 
+    if ($model instanceof Collection) {
+      return $model->map(function($model) {
+        if (!$model instanceof EntityConvertibleContract) {
+          throw new InvalidModelException($model::class);
+        }
+
+        return $model->toEntity(null);
+      });
+    }
+
     if (!$model instanceof EntityConvertibleContract) {
       throw new InvalidModelException($model::class);
     }
 
-    return $model->toEntity($this->newEntity());
+    return $model->toEntity(null);
   }
 
   /**
@@ -128,7 +138,7 @@ class EntityRepository implements IEntityRepository
   {
     return $this
       ->newModel()::all()
-      ->map(fn($model) => $model->toEntity($this->newEntity()));
+      ->map(fn($model) => $model->toEntity(null));
   }
 
   /**
@@ -158,7 +168,7 @@ class EntityRepository implements IEntityRepository
 
     return $qb
       ->get()
-      ->map(fn($model) => $model->toEntity($this->newEntity()));
+      ->map(fn($model) => $model->toEntity(null));
   }
 
   /**
@@ -245,7 +255,7 @@ class EntityRepository implements IEntityRepository
       ->paginate($perPage, $columns, 'page', $pageNumber);
 
     $items = Collection::make($paginated->items())
-      ->map(fn($model) => $model->toEntity($this->newEntity()));
+      ->map(fn($model) => $model->toEntity(null));
 
     return new LengthAwarePaginator($items, $paginated->total(), $perPage, $pageNumber, []);
   }

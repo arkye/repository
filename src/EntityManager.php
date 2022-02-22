@@ -23,22 +23,22 @@ class EntityManager
    */
   public static function getRepository(string $entityClass): IEntityRepository
   {
-    if (isset(static::$instances[$entityClass])) {
-      return static::$instances[$entityClass];
+    if (isset(self::$instances[$entityClass])) {
+      return self::$instances[$entityClass];
     }
 
-    if (isset(static::$aliases[$entityClass])) {
-      static::$instances[$entityClass] = app(static::$aliases[$entityClass]);
-      return static::$instances[$entityClass];
+    if (isset(self::$aliases[$entityClass])) {
+      self::$instances[$entityClass] = app(self::$aliases[$entityClass]);
+      return self::$instances[$entityClass];
     }
 
-    $repository = static::getRepositoryFromEntityClass($entityClass);
+    $repository = self::getRepositoryFromEntityClass($entityClass);
 
     if ($repository !== null) {
       return $repository;
     }
 
-    $repository = static::getRepositoryFromEntityAttribute($entityClass);
+    $repository = self::getRepositoryFromEntityAttribute($entityClass);
 
     if ($repository === null) {
       throw new EntityRepositoryNotFoundException($entityClass);
@@ -52,14 +52,14 @@ class EntityManager
    */
   public static function persist(object $entity)
   {
-    static::getRepository($entity::class)->persist($entity);
+    self::getRepository($entity::class)->persist($entity);
   }
 
   protected static function getRepositoryFromEntityClass(string $entityClass): ?object
   {
     $interfaceClass = str_replace('Entities\\', 'Repositories\\', $entityClass) . 'Repository';
 
-    return static::createRepository($entityClass, $interfaceClass);
+    return self::createRepository($entityClass, $interfaceClass);
   }
 
   /**
@@ -76,7 +76,7 @@ class EntityManager
 
     $interfaceClass = $attribute->getArguments()[0] ?? null;
 
-    return static::createRepository($entityClass, $interfaceClass);
+    return self::createRepository($entityClass, $interfaceClass);
   }
 
   protected static function createRepository(string $entityClass, string $interfaceClass): ?object
@@ -85,10 +85,10 @@ class EntityManager
       return null;
     }
 
-    static::$aliases[$entityClass] = $interfaceClass;
-    static::$instances[$entityClass] = app($interfaceClass);
+    self::$aliases[$entityClass] = $interfaceClass;
+    self::$instances[$entityClass] = app($interfaceClass);
 
-    return static::$instances[$entityClass];
+    return self::$instances[$entityClass];
   }
 
 }
