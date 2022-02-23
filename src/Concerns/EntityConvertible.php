@@ -3,6 +3,7 @@
 namespace Arkye\Repository\Concerns;
 
 use Arkye\Repository\EntityManager;
+use Arkye\Repository\Model;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Str;
 use ReflectionClass;
@@ -13,10 +14,10 @@ trait EntityConvertible
 
   /**
    * @param object $entity
-   * @return static
+   * @return Model
    * @throws ReflectionException
    */
-  public function fromEntity(object $entity): static
+  public function fromEntity(object $entity): Model
   {
     $map = $this->getEntityMap($entity);
 

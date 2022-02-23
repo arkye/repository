@@ -2,6 +2,7 @@
 
 namespace Arkye\Repository\Interfaces;
 
+use Arkye\Repository\Model;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -16,38 +17,43 @@ interface IEntityRepository
    * @param object|null $model
    * @return object
    */
-  public function newEntity(?object $model = null): object;
+  public function newEntity(object $model = null): object;
 
   /**
    * Returns a new instance of model.
    *
    * @param object|null $entity
-   * @return object|null
+   * @return Model
    */
-  public function newModel(?object $entity = null): ?object;
+  public function newModel(object $entity = null): Model;
 
   /**
    * Get a new query builder for the model's table.
    *
+   * @param array|string $relations Optional relationships.
+   *
    * @return Builder
    */
-  public function newQuery(): Builder;
+  public function newQuery(array|string $relations = []): Builder;
 
   /**
    * Finds an object by its primary key / identifier.
    *
    * @param mixed $id The identifier.
+   * @param array|string $relations Optional relationships.
    *
    * @return object|null The object.
    */
-  public function find($id): ?object;
+  public function find($id, array|string $relations = []): ?object;
 
   /**
    * Finds all objects in the repository.
    *
+   * @param array|string $relations Optional relationships.
+   *
    * @return Collection The objects.
    */
-  public function findAll(): Collection;
+  public function findAll(array|string $relations = []): Collection;
 
   /**
    * Finds objects by a set of criteria.
@@ -57,6 +63,7 @@ interface IEntityRepository
    * not supported.
    *
    * @param array $criteria
+   * @param array|string $relations Optional relationships.
    * @param string[]|null $orderBy
    * @param int|null $limit
    * @param int|null $offset
@@ -65,17 +72,18 @@ interface IEntityRepository
    *
    * @throws UnexpectedValueException
    */
-  public function findBy(array $criteria, ?array $orderBy = [], int $limit = null, int $offset = null): Collection;
+  public function findBy(array $criteria, array|string $relations = [], ?array $orderBy = [], int $limit = null, int $offset = null): Collection;
 
   /**
    * Finds a single object by a set of criteria.
    *
    * @param array $criteria The criteria.
+   * @param array|string $relations Optional relationships.
    * @param string[] $orderBy
    *
    * @return object|null The object.
    */
-  public function findOneBy(array $criteria, array $orderBy = []): ?object;
+  public function findOneBy(array $criteria, array|string $relations = [], array $orderBy = []): ?object;
 
   /**
    * @param array $criteria

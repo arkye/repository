@@ -59,7 +59,7 @@ class EntityRepository implements IEntityRepository
    * @param object|null $model
    * @return object
    */
-  public function newEntity(?object $model = null): object
+  public function newEntity(object $model = null): object
   {
     $entity = $this
       ->entityAttribute
@@ -77,7 +77,7 @@ class EntityRepository implements IEntityRepository
    * @param object|null $entity
    * @return Model
    */
-  public function newModel(?object $entity = null): Model
+  public function newModel(object $entity = null): Model
   {
     $model = $this
       ->modelAttribute
@@ -92,22 +92,24 @@ class EntityRepository implements IEntityRepository
   }
 
   /**
+   * @param array|string $relations
    * @return Builder
    */
-  public function newQuery(): Builder
+  public function newQuery(array|string $relations = []): Builder
   {
     return $this
       ->newModel()
-      ->newQuery();
+      ->newQuery()
+      ->with(is_array($relations) ?: array_map('trim', explode(',', $relations)));
   }
 
   /**
    * @inheritDoc
    */
-  public function find($id): ?object
+  public function find($id, array|string $relations = []): ?object
   {
     $model = $this
-      ->newQuery()
+      ->newQuery($relations)
       ->find($id);
 
     if (null === $model) {
@@ -134,19 +136,20 @@ class EntityRepository implements IEntityRepository
   /**
    * @inheritDoc
    */
-  public function findAll(): Collection
+  public function findAll(array|string $relations = []): Collection
   {
     return $this
-      ->newModel()::all()
+      ->newQuery($relations)
+      ->get()
       ->map(fn($model) => $model->toEntity(null));
   }
 
   /**
    * @inheritDoc
    */
-  public function findBy(array $criteria, ?array $orderBy = [], int $limit = null, int $offset = null): Collection
+  public function findBy(array $criteria, array|string $relations = [], ?array $orderBy = [], int $limit = null, int $offset = null): Collection
   {
-    $qb = $this->newQuery();
+    $qb = $this->newQuery($relations);
 
     foreach ($criteria as $attribute => $value)
     {
@@ -174,10 +177,10 @@ class EntityRepository implements IEntityRepository
   /**
    * @inheritDoc
    */
-  public function findOneBy(array $criteria, array $orderBy = []): ?object
+  public function findOneBy(array $criteria, array|string $relations = [], array $orderBy = []): ?object
   {
     return $this
-      ->findBy($criteria, $orderBy, 1)
+      ->findBy($criteria, $relations, $orderBy, 1)
       ->first();
   }
 

@@ -2,7 +2,7 @@
 
 namespace Arkye\Repository\Interfaces;
 
-use Illuminate\Database\Eloquent\Model;
+use Arkye\Repository\Model;
 
 interface IEntityConvertible
 {
@@ -14,9 +14,9 @@ interface IEntityConvertible
   public function fromEntity(object $entity): Model;
 
   /**
-   * @param object $entity
+   * @param object|null $entity
    * @return object
    */
-  public function toEntity(object $entity): object;
+  public function toEntity(object $entity = null): object;
 
 }
