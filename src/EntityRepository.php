@@ -100,7 +100,7 @@ class EntityRepository implements IEntityRepository
     return $this
       ->newModel()
       ->newQuery()
-      ->with(is_array($relations) ?: array_map('trim', explode(',', $relations)));
+      ->with(is_array($relations) ? $relations : array_map('trim', explode(',', $relations)));
   }
 
   /**
