@@ -225,7 +225,7 @@ class EntityRepository implements IEntityRepository
   private function resolveMagicCall(string $method, string $by, array $arguments): mixed
   {
     if (! $arguments) {
-      throw Exception('Missing parameter for ' . $method . $by);
+      throw new Exception('Missing parameter for ' . $method . $by);
     }
 
     $fieldName = Str::snake($by);

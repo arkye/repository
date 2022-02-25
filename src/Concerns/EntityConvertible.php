@@ -5,6 +5,7 @@ namespace Arkye\Repository\Concerns;
 use Arkye\Repository\EntityManager;
 use Arkye\Repository\Model;
 use Illuminate\Contracts\Support\Arrayable;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use ReflectionClass;
 use ReflectionException;
@@ -89,7 +90,9 @@ trait EntityConvertible
       return;
     }
 
-    $entity->{$propertyName} = $relationModel?->toEntity() ?? $relationModel->getRepository()->newEntity();
+    $entity->{$propertyName} = $relationModel instanceof Collection
+      ? $relationModel->map(fn($item) => $item?->toEntity() ?? $item->getRepository()->newEntity())
+      : $relationModel?->toEntity() ?? $relationModel->getRepository()->newEntity();
   }
 
   /**
