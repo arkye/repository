@@ -3,11 +3,11 @@
 namespace Tests\Repositories;
 
 use Arkye\Repository\Attributes\EntityAttribute;
-use Arkye\Repository\EntityRepository;
+use Arkye\Repository\EloquentEntityRepository;
 use Tests\Entities\Test;
 
 #[EntityAttribute(Test::class)]
-class TestRepositoryWithoutModelAttribute extends EntityRepository
+class TestEloquentRepositoryWithoutModelAttribute extends EloquentEntityRepository
 {
 
 }

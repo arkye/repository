@@ -7,7 +7,7 @@ use Arkye\Repository\Exceptions\InvalidModelException;
 use Arkye\Repository\Attributes\EntityAttribute;
 use Arkye\Repository\Attributes\ModelAttribute;
 use Arkye\Repository\Exceptions\ModelAttributeNotSetException;
-use Arkye\Repository\Interfaces\IEntityConvertible as EntityConvertibleContract;
+use Arkye\Repository\Interfaces\IEntityConvertible;
 use Arkye\Repository\Interfaces\IEntityRepository;
 use BadMethodCallException;
 use Exception;
@@ -16,61 +16,52 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
-use ReflectionAttribute;
 use ReflectionClass;
 
-class EntityRepository implements IEntityRepository
+class EloquentEntityRepository implements IEntityRepository
 {
 
-  private ReflectionClass $reflectionClass;
-  private ReflectionAttribute $entityAttribute;
-  private ReflectionAttribute $modelAttribute;
+  private string $entityClass;
+  private string $modelClass;
 
   public function __construct()
   {
-    $this->reflectionClass = new ReflectionClass($this);
-    $this->setAttributes();
+    $this->boot();
   }
 
-  protected function setAttributes()
+  protected function boot()
   {
-    $entityAttribute = $this
-        ->reflectionClass
+    $reflectionClass = new ReflectionClass($this);
+
+    $entityAttribute = $reflectionClass
         ->getAttributes(EntityAttribute::class)[0] ?? null;
 
     if (null === $entityAttribute) {
       throw new EntityAttributeNotSetException(static::class);
     }
 
-    $this->entityAttribute = $entityAttribute;
-
-    $modelAttribute = $this
-        ->reflectionClass
+    $modelAttribute = $reflectionClass
         ->getAttributes(ModelAttribute::class)[0] ?? null;
 
     if (null === $modelAttribute) {
       throw new ModelAttributeNotSetException(static::class);
     }
 
-    $this->modelAttribute = $modelAttribute;
+    $this->entityClass = $entityAttribute->newInstance()->getClassName();
+    $this->modelClass = $modelAttribute->newInstance()->getClassName();
   }
 
   /**
-   * @param object|null $model
+   * @param IEntityConvertible|null $model
    * @return object
    */
-  public function newEntity(object $model = null): object
+  public function newEntity(IEntityConvertible $model = null): object
   {
-    $entity = $this
-      ->entityAttribute
-      ->newInstance()
-      ->newInstance();
+    $entity = new $this->entityClass;
 
-    if ($model !== null) {
-      return $model->toEntity($entity);
-    }
-
-    return $entity;
+    return ($model !== null)
+      ? $model->toEntity($entity)
+      : $entity;
   }
 
   /**
@@ -79,10 +70,7 @@ class EntityRepository implements IEntityRepository
    */
   public function newModel(object $entity = null): Model
   {
-    $model = $this
-      ->modelAttribute
-      ->newInstance()
-      ->newInstance();
+    $model = new $this->modelClass;
 
     if ($entity !== null) {
       return $model->fromEntity($entity);
@@ -98,8 +86,7 @@ class EntityRepository implements IEntityRepository
   public function newQuery(array|string $relations = []): Builder
   {
     return $this
-      ->newModel()
-      ->newQuery()
+      ->modelClass::query()
       ->with(is_array($relations) ? $relations : array_map('trim', explode(',', $relations)));
   }
 
@@ -118,19 +105,19 @@ class EntityRepository implements IEntityRepository
 
     if ($model instanceof Collection) {
       return $model->map(function($model) {
-        if (!$model instanceof EntityConvertibleContract) {
+        if (!$model instanceof IEntityConvertible) {
           throw new InvalidModelException($model::class);
         }
 
-        return $model->toEntity(null);
+        return $model->toEntity();
       });
     }
 
-    if (!$model instanceof EntityConvertibleContract) {
+    if (!$model instanceof IEntityConvertible) {
       throw new InvalidModelException($model::class);
     }
 
-    return $model->toEntity(null);
+    return $model->toEntity();
   }
 
   /**
@@ -141,7 +128,7 @@ class EntityRepository implements IEntityRepository
     return $this
       ->newQuery($relations)
       ->get()
-      ->map(fn($model) => $model->toEntity(null));
+      ->map(fn($model) => $model->toEntity());
   }
 
   /**
@@ -264,20 +251,42 @@ class EntityRepository implements IEntityRepository
   }
 
   /**
-   * @alias persist
+   * Save a new model and return the corresponding entinty instance.
+   *
+   * @param  array  $values
+   * @return object
+   */
+  public function create(array $values = []): object
+  {
+    return $this->modelClass::create($values)->toEntity();
+  }
+
+  /**
+   * Update records in the database.
+   *
+   * @param  array  $values
+   * @return object
+   */
+  public function update(mixed $id, array $values): object
+  {
+    $model = $this->modelClass::query()
+      ->whereKey($id)
+      ->firstOrFail()
+      ->fill($values);
+
+    $model
+      ->save();
+
+    return $model
+      ->toEntity();
+  }
+
+  /**
+   *
    * @param object $entity
    * @return bool
    */
   public function save(object $entity): bool
-  {
-    return $this->persist($entity);
-  }
-
-  /**
-   * @param object $entity
-   * @return bool
-   */
-  public function persist(object $entity): bool
   {
     $model = $this->newModel();
 
@@ -285,13 +294,25 @@ class EntityRepository implements IEntityRepository
       ->newQuery()
       ->findOrNew($entity->{$model->getKeyName()});
 
-    if (!$model instanceof EntityConvertibleContract) {
+    if (!$model instanceof IEntityConvertible) {
       throw new InvalidModelException($model::class);
     }
 
     return $model
       ->fromEntity($entity)
       ->save();
+
+
+  }
+
+  /**
+   * @alias save
+   * @param object $entity
+   * @return bool
+   */
+  public function persist(object $entity): bool
+  {
+    return $this->save($entity);
   }
 
 }

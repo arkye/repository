@@ -7,37 +7,37 @@ use Arkye\Repository\Exceptions\ModelAttributeNotSetException;
 use PHPUnit\Framework\TestCase;
 use Tests\Entities\Test;
 use Tests\Models\TestModel;
-use Tests\Repositories\TestRepository;
-use Tests\Repositories\TestRepositoryWithoutEntityAttribute;
-use Tests\Repositories\TestRepositoryWithoutModelAttribute;
+use Tests\Repositories\TestEloquentRepository;
+use Tests\Repositories\TestEloquentRepositoryWithoutEntityAttribute;
+use Tests\Repositories\TestEloquentRepositoryWithoutModelAttribute;
 
-class EntityRepositoryTest extends TestCase
+class EloquentEntityRepositoryTest extends TestCase
 {
 
   public function testEntityAttributeNotSet()
   {
     $this->expectException(EntityAttributeNotSetException::class);
 
-    new TestRepositoryWithoutEntityAttribute();
+    new TestEloquentRepositoryWithoutEntityAttribute();
   }
 
   public function testModelAttributeNotSet()
   {
     $this->expectException(ModelAttributeNotSetException::class);
 
-    new TestRepositoryWithoutModelAttribute();
+    new TestEloquentRepositoryWithoutModelAttribute();
   }
 
   public function testNewEntity()
   {
-    $repository = new TestRepository();
+    $repository = new TestEloquentRepository();
 
     $this->assertInstanceOf(Test::class, $repository->newEntity());
   }
 
   public function testNewModel()
   {
-    $repository = new TestRepository();
+    $repository = new TestEloquentRepository();
 
     $this->assertInstanceOf(TestModel::class, $repository->newModel());
   }

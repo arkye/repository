@@ -5,7 +5,7 @@ namespace Tests;
 use Arkye\Repository\EntityManager;
 use PHPUnit\Framework\TestCase;
 use Tests\Entities\Test;
-use Tests\Repositories\TestRepository;
+use Tests\Repositories\TestEloquentRepository;
 
 class EntityManagerTest extends TestCase
 {
@@ -14,7 +14,7 @@ class EntityManagerTest extends TestCase
   {
     $repository = EntityManager::getRepository(Test::class);
 
-    $this->assertInstanceOf(TestRepository::class, $repository);
+    $this->assertInstanceOf(TestEloquentRepository::class, $repository);
   }
 
 }

@@ -10,4 +10,9 @@ class DomainRepositoryAttribute extends RepositoryAttribute
   public function __construct(private string $classname)
   {
   }
+
+  public function getClassName(): string
+  {
+    return $this->classname;
+  }
 }

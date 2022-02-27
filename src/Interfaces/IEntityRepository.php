@@ -14,10 +14,10 @@ interface IEntityRepository
   /**
    * Returns a new instance of entity.
    *
-   * @param object|null $model
+   * @param IEntityConvertible|null $model
    * @return object
    */
-  public function newEntity(object $model = null): object;
+  public function newEntity(IEntityConvertible $model = null): object;
 
   /**
    * Returns a new instance of model.
@@ -101,9 +101,26 @@ interface IEntityRepository
   public function paginate(int $perPage, int $pageNumber, array $columns = ['*'], string $pageName = 'page'): LengthAwarePaginator;
 
   /**
+   * Save a new model and return the corresponding entity instance.
+   *
+   * @param  array  $values
+   * @return object
+   */
+  public function create(array $values = []): object;
+
+  /**
+   * Update records in the database.
+   *
+   * @param  mixed  $id
+   * @param  array  $values
+   * @return object
+   */
+  public function update(mixed $id, array $values): object;
+
+  /**
    * @param object $entity
    * @return bool
    */
-  public function persist(object $entity): bool;
+  public function save(object $entity): bool;
 
 }

@@ -50,9 +50,9 @@ class EntityManager
   /**
    * @throws Exception
    */
-  public static function persist(object $entity)
+  public static function save(object $entity)
   {
-    self::getRepository($entity::class)->persist($entity);
+    self::getRepository($entity::class)->save($entity);
   }
 
   protected static function getRepositoryFromEntityClass(string $entityClass): ?object

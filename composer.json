@@ -38,5 +38,10 @@
       "Tests\\": "tests/"
     },
     "files": ["tests/helpers.php"]
+  },
+  "config": {
+    "allow-plugins": {
+      "phpro/grumphp": false
+    }
   }
 }

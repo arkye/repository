@@ -33,6 +33,7 @@ class UrlRoutableEntity implements UrlRoutable
 
     return $model
       ->resolveRouteBindingQuery($model->newQuery(), $value, $field)
+      ->get()
       ->first()
       ?->toEntity(null);
   }
@@ -51,6 +52,7 @@ class UrlRoutableEntity implements UrlRoutable
     return EntityManager::getRepository($this::class)
       ->newModel()
       ->resolveChildRouteBindingQuery($childType, $value, $field)
+      ->get()
       ->first()
       ?->toEntity(null);
   }

@@ -9,6 +9,11 @@ class RepositoryAttribute
   {
   }
 
+  public function getClassName(): string
+  {
+    return $this->classname;
+  }
+
   public function newInstance(): ?object
   {
     return new $this->classname(...func_get_args());
