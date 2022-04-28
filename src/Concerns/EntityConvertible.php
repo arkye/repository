@@ -48,26 +48,58 @@ trait EntityConvertible
 
     foreach ($map as $propertyName => $prop)
     {
-      if ($this->isRelation($propertyName)) {
-        $this->handleModelRelation($entity, $propertyName, $prop);
+      $key = Str::snake($propertyName);
+
+      // If the attribute exists in the attribute array or has a "get" mutator we will
+      // get the attribute's value. Otherwise, we will proceed as if the developers
+      // are asking for a relationship's value. This covers both types of values.
+      if (array_key_exists($key, $this->attributes) ||
+        array_key_exists($key, $this->casts) ||
+        $this->hasGetMutator($key) ||
+        $this->hasAttributeMutator($key) ||
+        $this->isClassCastable($key)) {
+        $this->handleModelAttribute($entity, $propertyName, $prop);
         continue;
       }
 
-      if ($prop['public']) {
-        $entity->{$propertyName} = $this->{Str::snake($propertyName)} ?? null;
-      } else {
-        $setter = 'set' . ucfirst($propertyName);
-
-        if (!method_exists($entity, $setter)) {
-          continue;
-        }
-
-        $entity->{$setter}($this->{Str::snake($propertyName)} ?? null);
+      // Here we will determine if the model base class itself contains this given key
+      // since we don't want to treat any of those methods as relationships because
+      // they are all intended as helper methods and none of these are relations.
+      if (method_exists(self::class, $key)) {
+        continue;
       }
 
+      if (!$this->isRelation($propertyName)) {
+        continue;
+      }
+
+      $this->handleModelRelation($entity, $propertyName, $prop);
     }
 
     return $entity;
+  }
+
+  /**
+   * @param object $entity
+   * @param string $propertyName
+   * @param array $prop
+   * @return void
+   * @throws ReflectionException
+   */
+  private function handleModelAttribute(object &$entity, string $propertyName, array $prop): void
+  {
+    if ($prop['public']) {
+      $entity->{$propertyName} = $this->{Str::snake($propertyName)} ?? null;
+      return;
+    }
+
+    $setter = 'set' . ucfirst($propertyName);
+
+    if (!method_exists($entity, $setter)) {
+      return;
+    }
+
+    $entity->{$setter}($this->{Str::snake($propertyName)} ?? null);
   }
 
   /**
