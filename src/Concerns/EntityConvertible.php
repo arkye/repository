@@ -24,12 +24,25 @@ trait EntityConvertible
 
     foreach ($map as $propertyName => $prop)
     {
-      if ($this->isRelation($propertyName)) {
-        $this->handleEntityRelation($propertyName, $prop);
+      $key = Str::snake($propertyName);
+
+      if ($this->isModelAttribute($key)) {
+        $this->{$key} = $prop['value'];
         continue;
       }
 
-      $this->{Str::snake($propertyName)} = $prop['value'];
+      // Here we will determine if the model base class itself contains this given key
+      // since we don't want to treat any of those methods as relationships because
+      // they are all intended as helper methods and none of these are relations.
+      if (method_exists(self::class, $key)) {
+        continue;
+      }
+
+      if (!$this->isRelation($propertyName)) {
+        continue;
+      }
+
+      $this->handleEntityRelation($propertyName, $prop);
     }
 
     return $this;
@@ -53,11 +66,7 @@ trait EntityConvertible
       // If the attribute exists in the attribute array or has a "get" mutator we will
       // get the attribute's value. Otherwise, we will proceed as if the developers
       // are asking for a relationship's value. This covers both types of values.
-      if (array_key_exists($key, $this->attributes) ||
-        array_key_exists($key, $this->casts) ||
-        $this->hasGetMutator($key) ||
-        $this->hasAttributeMutator($key) ||
-        $this->isClassCastable($key)) {
+      if ($this->isModelAttribute($key)) {
         $this->handleModelAttribute($entity, $propertyName, $prop);
         continue;
       }
@@ -77,6 +86,21 @@ trait EntityConvertible
     }
 
     return $entity;
+  }
+
+  private function isModelAttribute(string $key): bool
+  {
+    if (array_key_exists($key, $this->attributes) ||
+      array_key_exists($key, $this->casts) ||
+      $this->hasGetMutator($key) ||
+      $this->hasAttributeMutator($key) ||
+      $this->hasSetMutator($key) ||
+      $this->hasAttributeSetMutator($key) ||
+      $this->isClassCastable($key)) {
+      return true;
+    }
+
+    return false;
   }
 
   /**
