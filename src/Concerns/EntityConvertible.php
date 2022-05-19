@@ -112,8 +112,14 @@ trait EntityConvertible
    */
   private function handleModelAttribute(object &$entity, string $propertyName, array $prop): void
   {
+    $value = $this->{Str::snake($propertyName)} ?? null;
+
+    if ($prop['is_enum']) {
+      $value = $this->castEnumAttribute($prop['type'], $value);
+    }
+
     if ($prop['public']) {
-      $entity->{$propertyName} = $this->{Str::snake($propertyName)} ?? null;
+      $entity->{$propertyName} = $value;
       return;
     }
 
@@ -123,7 +129,20 @@ trait EntityConvertible
       return;
     }
 
-    $entity->{$setter}($this->{Str::snake($propertyName)} ?? null);
+    $entity->{$setter}($value);
+  }
+
+  private function castEnumAttribute(string $castType, mixed $value): mixed
+  {
+    if (is_null($value)) {
+      return null;
+    }
+
+    if (is_a($value, $castType)) {
+      return $value;
+    }
+
+    return $castType::from($value);
   }
 
   /**
@@ -188,10 +207,13 @@ trait EntityConvertible
         continue;
       }
 
+      $type = $prop->getType()->getName();
+
       $propMap = [
         'public' => $prop->isPublic(),
         'nullable' => $prop->getType()->allowsNull(),
-        'type' => $prop->getType()->getName(),
+        'type' => $type,
+        'is_enum' => function_exists('enum_exists') && enum_exists($type),
         'value' => null,
       ];
 
