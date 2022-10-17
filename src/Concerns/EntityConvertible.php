@@ -183,7 +183,11 @@ trait EntityConvertible
       return;
     }
 
-    $model = EntityManager::getRepository($prop['type'])->newModel($prop['value'] ?? (object) []);
+    if ($prop['type'] === Collection::class || $prop['type'] === \Illuminate\Database\Eloquent\Collection::class) {
+      $model = $prop['value']->map(fn($item) => EntityManager::getRepository($prop['value']->first()::class)->newModel($item));
+    } else {
+      $model = EntityManager::getRepository($prop['type'])->newModel($prop['value'] ?? (object) []);
+    }
 
     $this->setRelation($propertyName, $model);
   }
